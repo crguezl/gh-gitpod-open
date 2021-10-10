@@ -1,35 +1,53 @@
 #!/bin/bash
-set -e
+set -euo pipefail
+IFS=$'\n\t'
 
-echo "Hello gh-gitpod-open!"
+function openRepository
+{
+    GITHUBURL=$(gh browse --no-browser)
+    GITPODURL="https://gitpod.io#${GITHUBURL}"
 
-# Snippets to help get started:
+    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        sensible-browser "${GITPODURL}" || x-www-browser "${GITPODURL}" ||  xdg-open "${GITPODURL}" || gnome-open "${GITPODURL}"
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        open "${GITPODURL}"
+    else
+        echo Error: unknown operating system, unable to open "${GITPODURL}"
+        exit 1
+    fi
+}
 
-# Determine if an executable is in the PATH
-# if ! type -p ruby >/dev/null; then
-#   echo "Ruby not found on the system" >&2
-#   exit 1
-# fi
+while [ $# -gt 0 ]; do
+  case "$1" in
+  open|--open)
+    openRepository
+    exit 0
+    ;;
+  -h|--help)
+    cat << EOF
+GitHub Command line interface for Gitpod
 
-# Pass arguments through to another command
-# gh issue list "$@" -R cli/cli
+Usage:
+  gh gp [command]
 
-# Using the gh api command to retrieve and format information
-# QUERY='
-#   query($endCursor: String) {
-#     viewer {
-#       repositories(first: 100, after: $endCursor) {
-#         nodes {
-#           nameWithOwner
-#           stargazerCount
-#         }
-#       }
-#     }
-#   }
-# '
-# TEMPLATE='
-#   {{- range $repo := .data.viewer.repositories.nodes -}}
-#     {{- printf "name: %s - stargazers: %v\n" $repo.nameWithOwner $repo.stargazerCount -}}
-#   {{- end -}}
-# '
-# exec gh api graphql -f query="${QUERY}" --paginate --template="${TEMPLATE}"
+Available Commands:
+  help                Help about any command
+  open                Opens the GitHub repository in a workspace
+
+Flags:
+  -h, --help   help for gh gp
+EOF
+    exit 0
+    ;;
+    *)
+    cat << EOF
+Error: unknown command "$1" for "gh gp"
+Run 'gh gp --help' for usage.
+EOF
+  exit 1
+  ;;
+  esac
+done
+
+# default behaviour is to open the repository
+openRepository
